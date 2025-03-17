@@ -105,13 +105,14 @@ public class NotificationManagerPlugin extends CordovaPlugin {
         // Set custom sound if provided
         if (soundUri != null && !soundUri.isEmpty()) {
             try {
-                Uri sound = Uri.parse(soundUri);
+                String soundUriString = "android.resource://" + context.getPackageName() + "/raw/" + soundFileName;
+                Uri soundUri = Uri.parse(soundUriString);
                 AudioAttributes attributes = new AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .build();
-                channel.setSound(sound, attributes);
-                Log.d(TAG, "Custom sound set for channel: " + soundUri);
+                channel.setSound(soundUri, attributes);
+                Log.d(TAG, "Custom sound set for channel: " + soundUriString);
             } catch (Exception e) {
                 Log.e(TAG, "Invalid sound URI: " + soundUri, e);
             }
