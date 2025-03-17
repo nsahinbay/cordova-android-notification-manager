@@ -75,7 +75,7 @@ public class NotificationManagerPlugin extends CordovaPlugin {
     }
 
     @TargetApi(26)
-    private static void createChannel(Context context, String channelId, String name, String description, int importance, String soundUri) {
+    private static void createChannel(Context context, String channelId, String name, String description, int importance, String soundFileName) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             Log.w(TAG, "Notification channels are not supported below Android 8.0 (API 26)");
             return;
@@ -87,7 +87,7 @@ public class NotificationManagerPlugin extends CordovaPlugin {
             return;
         }
 
-        // Check if the channel already exists
+        // Kanal zaten var mı kontrol et
         NotificationChannel existingChannel = notificationManager.getNotificationChannel(channelId);
         if (existingChannel != null) {
             Log.i(TAG, "Notification channel already exists: " + channelId);
@@ -96,26 +96,22 @@ public class NotificationManagerPlugin extends CordovaPlugin {
 
         Log.d(TAG, "Creating notification channel: " + channelId);
 
-        // Create a new NotificationChannel
+        // Yeni kanal oluştur
         NotificationChannel channel = new NotificationChannel(channelId, name, importance);
         channel.setDescription(description);
         channel.enableLights(true);
         channel.enableVibration(true);
 
-        // Set custom sound if provided
-        if (soundUri != null && !soundUri.isEmpty()) {
-            try {
-                String soundUriString = "android.resource://" + context.getPackageName() + "/raw/" + soundFileName;
-                Uri soundUri = Uri.parse(soundUriString);
-                AudioAttributes attributes = new AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .build();
-                channel.setSound(soundUri, attributes);
-                Log.d(TAG, "Custom sound set for channel: " + soundUriString);
-            } catch (Exception e) {
-                Log.e(TAG, "Invalid sound URI: " + soundUri, e);
-            }
+        // Özel ses dosyasını URI ile bağlama
+        if (soundFileName != null && !soundFileName.isEmpty()) {
+            String soundUriString = "android.resource://" + context.getPackageName() + "/raw/" + soundFileName;
+            Uri soundUri = Uri.parse(soundUriString);
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .build();
+            channel.setSound(soundUri, attributes);
+            Log.d(TAG, "Custom sound set for channel: " + soundUriString);
         } else {
             Log.d(TAG, "No custom sound set for channel");
         }
@@ -123,6 +119,7 @@ public class NotificationManagerPlugin extends CordovaPlugin {
         notificationManager.createNotificationChannel(channel);
         Log.i(TAG, "Notification channel created successfully: " + channelId);
     }
+
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
@@ -153,7 +150,7 @@ public class NotificationManagerPlugin extends CordovaPlugin {
                     String name = args.getString(1);
                     String description = args.getString(2);
                     int importance = args.getInt(3);
-                    String soundUri = args.optString(4, null); // 📌 Null kontrolü eklendi
+                    String soundFileName = args.optString(4, null); // 📌 Null kontrolü eklendi
                     
                     createChannel(this.cordova.getActivity(), channelId, name, description, importance, soundUri);
                     callbackContext.success();

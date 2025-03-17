@@ -113,8 +113,8 @@ NotificationManager._openNotificationChannelSettings = function(channelId, onSuc
     }, onFail, NotificationManager.SERVICE_NAME, 'openNotificationChannelSettings', [channelId]);
 };
 
-NotificationManager._createNotificationChannel = function(channelId, name, description, importance, soundUri, onSuccess, onFail) {
-    cordova.exec(onSuccess, onFail, NotificationManager.SERVICE_NAME, 'createNotificationChannel', [channelId, name, description, importance, soundUri]);
+NotificationManager._createNotificationChannel = function(channelId, name, description, importance, soundFileName, onSuccess, onFail) {
+    cordova.exec(onSuccess, onFail, NotificationManager.SERVICE_NAME, 'createNotificationChannel', [channelId, name, description, importance, soundFileName]);
 };
 
 NotificationManager._areNotificationsEnabled = function(onSuccess, onFail) {
