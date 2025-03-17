@@ -152,7 +152,7 @@ public class NotificationManagerPlugin extends CordovaPlugin {
                     int importance = args.getInt(3);
                     String soundFileName = args.optString(4, null); // 📌 Null kontrolü eklendi
                     
-                    createChannel(this.cordova.getActivity(), channelId, name, description, importance, soundUri);
+                    createChannel(this.cordova.getActivity(), channelId, name, description, importance, soundFileName);
                     callbackContext.success();
                     return true;
 
