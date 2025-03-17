@@ -6,8 +6,11 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.media.AudioAttributes;
+import android.util.Log; // 📌 Eksik olan import eklendi
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -17,10 +20,12 @@ import org.json.JSONObject;
 
 public class NotificationManagerPlugin extends CordovaPlugin {
 
+    private static final String TAG = "NotificationManagerPlugin"; // 📌 Eksik TAG değişkeni eklendi
+
     @TargetApi(26)
     private void openAppNotificationSettings() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            final Activity activity = this.cordova.getActivity();
+            Activity activity = this.cordova.getActivity();
             Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
             intent.putExtra(Settings.EXTRA_APP_PACKAGE, activity.getPackageName());
             activity.startActivity(intent);
@@ -30,8 +35,8 @@ public class NotificationManagerPlugin extends CordovaPlugin {
     @TargetApi(24)
     private boolean areNotificationsEnabled() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            final Activity activity = this.cordova.getActivity();
-            final NotificationManager notificationManager = (NotificationManager) activity
+            Activity activity = this.cordova.getActivity();
+            NotificationManager notificationManager = (NotificationManager) activity
                     .getSystemService(Context.NOTIFICATION_SERVICE);
             return notificationManager != null && notificationManager.areNotificationsEnabled();
         }
@@ -41,7 +46,7 @@ public class NotificationManagerPlugin extends CordovaPlugin {
     @TargetApi(26)
     private void openNotificationChannelSettings(String channelId) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            final Activity activity = this.cordova.getActivity();
+            Activity activity = this.cordova.getActivity();
             Intent intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
             intent.putExtra(Settings.EXTRA_APP_PACKAGE, activity.getPackageName());
             intent.putExtra(Settings.EXTRA_CHANNEL_ID, channelId);
@@ -53,10 +58,9 @@ public class NotificationManagerPlugin extends CordovaPlugin {
     private JSONObject getNotificationChannel(String channelId) throws JSONException {
         JSONObject channelJSON = new JSONObject();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            final Activity activity = this.cordova.getActivity();
-            final NotificationManager manager = (NotificationManager) activity
-                    .getSystemService(Context.NOTIFICATION_SERVICE);
-            final NotificationChannel channel = manager.getNotificationChannel(channelId);
+            Activity activity = this.cordova.getActivity();
+            NotificationManager manager = (NotificationManager) activity.getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationChannel channel = manager.getNotificationChannel(channelId);
 
             if (channel != null) {
                 channelJSON.put("id", channel.getId());
@@ -78,7 +82,6 @@ public class NotificationManagerPlugin extends CordovaPlugin {
         }
 
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-
         if (notificationManager == null) {
             Log.e(TAG, "Failed to get NotificationManager instance");
             return;
@@ -108,7 +111,6 @@ public class NotificationManagerPlugin extends CordovaPlugin {
                         .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .build();
                 channel.setSound(sound, attributes);
-
                 Log.d(TAG, "Custom sound set for channel: " + soundUri);
             } catch (Exception e) {
                 Log.e(TAG, "Invalid sound URI: " + soundUri, e);
@@ -121,47 +123,50 @@ public class NotificationManagerPlugin extends CordovaPlugin {
         Log.i(TAG, "Notification channel created successfully: " + channelId);
     }
 
-
-
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         try {
-            if ("getNotificationChannel".equals(action)) {
-                callbackContext.success(getNotificationChannel(args.getString(0)));
-                return true;
-            }
+            switch (action) {
+                case "getNotificationChannel":
+                    callbackContext.success(getNotificationChannel(args.getString(0)));
+                    return true;
 
-            if ("openNotificationChannelSettings".equals(action)) {
-                openNotificationChannelSettings(args.getString(0));
-                callbackContext.success();
-                return true;
-            }
+                case "openNotificationChannelSettings":
+                    openNotificationChannelSettings(args.getString(0));
+                    callbackContext.success();
+                    return true;
 
-            if ("openAppNotificationSettings".equals(action)) {
-                openAppNotificationSettings();
-                callbackContext.success();
-                return true;
-            }
+                case "openAppNotificationSettings":
+                    openAppNotificationSettings();
+                    callbackContext.success();
+                    return true;
 
-            if ("areNotificationsEnabled".equals(action)) {
-                JSONObject s = new JSONObject();
-                s.put("status", areNotificationsEnabled());
-                callbackContext.success(s);
-                return true;
-            }
-            if ("createNotificationChannel".equals(action)) {
-                String channelId = args.getString(0);
-                String name = args.getString(1);
-                String description = args.getString(2);
-                int importance = args.getInt(3);
-                String soundUri = args.getString(4);
-                createNotificationChannel(channelId, name, description, importance, soundUri);
-                callbackContext.success();
-                return true;
-            }
+                case "areNotificationsEnabled":
+                    JSONObject s = new JSONObject();
+                    s.put("status", areNotificationsEnabled());
+                    callbackContext.success(s);
+                    return true;
 
+                case "createNotificationChannel":
+                    String channelId = args.getString(0);
+                    String name = args.getString(1);
+                    String description = args.getString(2);
+                    int importance = args.getInt(3);
+                    String soundUri = args.optString(4, null); // 📌 Null kontrolü eklendi
+                    
+                    createChannel(this.cordova.getActivity(), channelId, name, description, importance, soundUri);
+                    callbackContext.success();
+                    return true;
+
+                default:
+                    return false;
+            }
         } catch (JSONException e) {
-            callbackContext.error(e.getMessage());
+            Log.e(TAG, "JSON Exception: " + e.getMessage(), e);
+            callbackContext.error("JSON error: " + e.getMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error: " + e.getMessage(), e);
+            callbackContext.error("Unexpected error: " + e.getMessage());
         }
 
         return false;
