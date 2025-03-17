@@ -71,29 +71,54 @@ public class NotificationManagerPlugin extends CordovaPlugin {
     }
 
     @TargetApi(26)
-    private void createNotificationChannel(String channelId, String name, String description, int importance, String soundUri) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            final Activity activity = this.cordova.getActivity();
-            final NotificationManager notificationManager = (NotificationManager) activity
-                    .getSystemService(Context.NOTIFICATION_SERVICE);
-
-            if (notificationManager != null) {
-                NotificationChannel channel = new NotificationChannel(channelId, name, importance);
-                channel.setDescription(description);
-
-                // Özel ses tanımlama
-                if (soundUri != null && !soundUri.isEmpty()) {
-                    Uri sound = Uri.parse(soundUri);
-                    AudioAttributes attributes = new AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                            .build();
-                    channel.setSound(sound, attributes);
-                }
-
-                notificationManager.createNotificationChannel(channel);
-            }
+    private static void createChannel(Context context, String channelId, String name, String description, int importance, String soundUri) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            Log.w(TAG, "Notification channels are not supported below Android 8.0 (API 26)");
+            return;
         }
+
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (notificationManager == null) {
+            Log.e(TAG, "Failed to get NotificationManager instance");
+            return;
+        }
+
+        // Check if the channel already exists
+        NotificationChannel existingChannel = notificationManager.getNotificationChannel(channelId);
+        if (existingChannel != null) {
+            Log.i(TAG, "Notification channel already exists: " + channelId);
+            return;
+        }
+
+        Log.d(TAG, "Creating notification channel: " + channelId);
+
+        // Create a new NotificationChannel
+        NotificationChannel channel = new NotificationChannel(channelId, name, importance);
+        channel.setDescription(description);
+        channel.enableLights(true);
+        channel.enableVibration(true);
+
+        // Set custom sound if provided
+        if (soundUri != null && !soundUri.isEmpty()) {
+            try {
+                Uri sound = Uri.parse(soundUri);
+                AudioAttributes attributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .build();
+                channel.setSound(sound, attributes);
+
+                Log.d(TAG, "Custom sound set for channel: " + soundUri);
+            } catch (Exception e) {
+                Log.e(TAG, "Invalid sound URI: " + soundUri, e);
+            }
+        } else {
+            Log.d(TAG, "No custom sound set for channel");
+        }
+
+        notificationManager.createNotificationChannel(channel);
+        Log.i(TAG, "Notification channel created successfully: " + channelId);
     }
 
 
@@ -124,13 +149,13 @@ public class NotificationManagerPlugin extends CordovaPlugin {
                 callbackContext.success(s);
                 return true;
             }
-
             if ("createNotificationChannel".equals(action)) {
                 String channelId = args.getString(0);
                 String name = args.getString(1);
                 String description = args.getString(2);
                 int importance = args.getInt(3);
-                createNotificationChannel(channelId, name, description, importance);
+                String soundUri = args.getString(4);
+                createNotificationChannel(channelId, name, description, importance, soundUri);
                 callbackContext.success();
                 return true;
             }
