@@ -71,7 +71,7 @@ public class NotificationManagerPlugin extends CordovaPlugin {
     }
 
     @TargetApi(26)
-    private void createNotificationChannel(String channelId, String name, String description, int importance) {
+    private void createNotificationChannel(String channelId, String name, String description, int importance, String soundUri) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             final Activity activity = this.cordova.getActivity();
             final NotificationManager notificationManager = (NotificationManager) activity
@@ -80,10 +80,23 @@ public class NotificationManagerPlugin extends CordovaPlugin {
             if (notificationManager != null) {
                 NotificationChannel channel = new NotificationChannel(channelId, name, importance);
                 channel.setDescription(description);
+
+                // Özel ses tanımlama
+                if (soundUri != null && !soundUri.isEmpty()) {
+                    Uri sound = Uri.parse(soundUri);
+                    AudioAttributes attributes = new AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                            .build();
+                    channel.setSound(sound, attributes);
+                }
+
                 notificationManager.createNotificationChannel(channel);
             }
         }
     }
+
+
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {

@@ -70,16 +70,17 @@ NotificationManager.openNotificationChannelSettings = function(channelId) {
 };
 
 /**
- * Create a new Notification Channel
+ * Create a new Notification Channel with optional sound
  * @param {string} channelId - Unique ID for the channel
  * @param {string} name - Name of the channel
  * @param {string} description - Description of the channel
  * @param {number} importance - Importance level of the channel (see NotificationManager.IMPORTANCE_* constants)
+ * @param {string|null} soundUri - (Optional) Custom sound URI (e.g., "android.resource://su.scat.calltaxi/raw/custom_sound")
  * @returns {Promise}
  */
-NotificationManager.createNotificationChannel = function(channelId, name, description, importance) {
+NotificationManager.createNotificationChannel = function(channelId, name, description, importance, soundUri = null) {
     return new Promise(function(onSuccess, onFail) {
-        NotificationManager._createNotificationChannel(channelId, name, description, importance, onSuccess, onFail);
+        NotificationManager._createNotificationChannel(channelId, name, description, importance, soundUri, onSuccess, onFail);
     });
 };
 
@@ -112,8 +113,8 @@ NotificationManager._openNotificationChannelSettings = function(channelId, onSuc
     }, onFail, NotificationManager.SERVICE_NAME, 'openNotificationChannelSettings', [channelId]);
 };
 
-NotificationManager._createNotificationChannel = function(channelId, name, description, importance, onSuccess, onFail) {
-    cordova.exec(onSuccess, onFail, NotificationManager.SERVICE_NAME, 'createNotificationChannel', [channelId, name, description, importance]);
+NotificationManager._createNotificationChannel = function(channelId, name, description, importance, soundUri, onSuccess, onFail) {
+    cordova.exec(onSuccess, onFail, NotificationManager.SERVICE_NAME, 'createNotificationChannel', [channelId, name, description, importance, soundUri]);
 };
 
 NotificationManager._areNotificationsEnabled = function(onSuccess, onFail) {
